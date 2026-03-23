@@ -1,0 +1,1404 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Fleet Age Model — Visual Explainer</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        font-family:
+          "Inter",
+          system-ui,
+          -apple-system,
+          sans-serif;
+        background: #0f1117;
+        color: #e0e0e0;
+        line-height: 1.6;
+      }
+
+      .container {
+        max-width: 960px;
+        margin: 0 auto;
+        padding: 48px 24px;
+      }
+
+      h1 {
+        font-size: 28px;
+        font-weight: 700;
+        color: #fff;
+        margin-bottom: 8px;
+      }
+      .subtitle {
+        font-size: 15px;
+        color: #888;
+        margin-bottom: 48px;
+      }
+
+      /* Section blocks */
+      .section {
+        margin-bottom: 64px;
+      }
+      .section-label {
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 1.5px;
+        color: #92a7d4;
+        margin-bottom: 8px;
+      }
+      .section h2 {
+        font-size: 20px;
+        font-weight: 600;
+        color: #fff;
+        margin-bottom: 6px;
+      }
+      .section p {
+        font-size: 14px;
+        color: #aaa;
+        margin-bottom: 20px;
+        max-width: 680px;
+      }
+
+      /* Canvas containers */
+      .chart-wrap {
+        background: #181a20;
+        border: 1px solid #2a2d35;
+        border-radius: 12px;
+        padding: 24px;
+        margin-bottom: 16px;
+      }
+      .chart-wrap canvas {
+        width: 100%;
+        height: auto;
+      }
+
+      /* Interactive controls */
+      .slider-row {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        margin-top: 12px;
+      }
+      .slider-row label {
+        font-size: 13px;
+        color: #888;
+        min-width: 50px;
+      }
+      .slider-row input[type="range"] {
+        flex: 1;
+        accent-color: #92a7d4;
+      }
+      .slider-val {
+        font-size: 14px;
+        font-weight: 600;
+        color: #fff;
+        min-width: 60px;
+        text-align: right;
+      }
+
+      /* Cohort grid */
+      .cohort-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(36px, 1fr));
+        gap: 3px;
+        margin-bottom: 12px;
+      }
+      .cohort-cell {
+        aspect-ratio: 1;
+        border-radius: 4px;
+        position: relative;
+        transition: opacity 0.3s;
+      }
+      .cohort-cell .tooltip {
+        display: none;
+        position: absolute;
+        bottom: 110%;
+        left: 50%;
+        transform: translateX(-50%);
+        background: #222;
+        color: #fff;
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 11px;
+        white-space: nowrap;
+        z-index: 10;
+      }
+      .cohort-cell:hover .tooltip {
+        display: block;
+      }
+
+      .legend-row {
+        display: flex;
+        gap: 20px;
+        margin-top: 8px;
+        flex-wrap: wrap;
+      }
+      .legend-item {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 12px;
+        color: #aaa;
+      }
+      .legend-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 2px;
+        flex-shrink: 0;
+      }
+
+      /* Equation box */
+      .equation {
+        background: #1c1e26;
+        border-left: 3px solid #92a7d4;
+        padding: 14px 18px;
+        border-radius: 0 8px 8px 0;
+        font-family: "Courier New", monospace;
+        font-size: 14px;
+        color: #c8d0e0;
+        margin-bottom: 20px;
+        overflow-x: auto;
+      }
+
+      /* Annotation callout */
+      .callout {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        background: #181a20;
+        border: 1px solid #2a2d35;
+        border-radius: 8px;
+        padding: 14px 16px;
+        margin-top: 14px;
+        font-size: 13px;
+        color: #aaa;
+      }
+      .callout-icon {
+        font-size: 16px;
+        flex-shrink: 0;
+        margin-top: 1px;
+      }
+
+      /* Fleet sim */
+      .fleet-bars {
+        display: flex;
+        align-items: flex-end;
+        gap: 2px;
+        height: 220px;
+        padding-top: 10px;
+      }
+      .fleet-bar-col {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-end;
+        align-items: center;
+        height: 100%;
+        position: relative;
+      }
+      .fleet-bar-col .year-label {
+        font-size: 9px;
+        color: #666;
+        margin-top: 4px;
+        transform: rotate(-45deg);
+        white-space: nowrap;
+      }
+      .bar-segment {
+        width: 100%;
+        min-height: 0;
+        transition: height 0.4s ease;
+      }
+
+      .tab-row {
+        display: flex;
+        gap: 4px;
+        margin-bottom: 16px;
+      }
+      .tab-btn {
+        padding: 6px 14px;
+        font-size: 12px;
+        font-weight: 600;
+        border: 1px solid #2a2d35;
+        background: transparent;
+        color: #888;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+      .tab-btn.active {
+        background: #92a7d4;
+        color: #0f1117;
+        border-color: #92a7d4;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Fleet Age Model</h1>
+      <p class="subtitle">
+        How the notebook projects the UK car fleet from 2015 to 2061 using cohort survival
+      </p>
+
+      <!-- ─── SECTION 1: Weibull ─── -->
+      <div class="section">
+        <div class="section-label">Step 1</div>
+        <h2>The Weibull Survival Curve</h2>
+        <p>
+          Cars don't last forever. The model uses a Weibull distribution to calculate the
+          probability that a car of any given age is still on the road. Young cars almost always
+          survive; by age 18, only about 8% remain.
+        </p>
+
+        <div class="equation">
+          S(age) = e
+          <sup>
+            −(age / 14.6)
+            <sup>4.4</sup>
+          </sup>
+        </div>
+
+        <div class="chart-wrap">
+          <canvas id="weibullChart" width="900" height="340"></canvas>
+          <div class="slider-row">
+            <label>Age</label>
+            <input type="range" id="ageSlider" min="0" max="30" value="13" step="1" />
+            <span class="slider-val" id="ageVal">13 yrs</span>
+          </div>
+        </div>
+        <div class="callout">
+          <span class="callout-icon">&#9432;</span>
+          <span>
+            At age
+            <strong id="calloutAge">13</strong>
+            , a car has a
+            <strong id="calloutSurv">54.9%</strong>
+            chance of still being licensed — and a
+            <strong id="calloutCond">79.3%</strong>
+            chance of surviving one more year given it made it this far.
+          </span>
+        </div>
+      </div>
+
+      <!-- ─── SECTION 2: 2015 Starting Fleet ─── -->
+      <div class="section">
+        <div class="section-label">Step 2</div>
+        <h2>The 2015 Starting Fleet</h2>
+        <p>
+          The model is seeded with real data: ~30.3 million licensed cars broken down by age bracket
+          from government statistics (VEH1107). Each square below represents roughly 100,000 cars,
+          coloured by how old they were in 2015.
+        </p>
+
+        <div class="chart-wrap">
+          <div id="cohortGrid" class="cohort-grid"></div>
+          <div class="legend-row" id="cohortLegend"></div>
+        </div>
+        <div class="callout">
+          <span class="callout-icon">&#9432;</span>
+          <span>
+            The newest cars (age 0–1) are brightest. Older brackets are disaggregated using Weibull
+            weights — younger ages within each bracket get more cars because fewer old cars survive.
+          </span>
+        </div>
+      </div>
+
+      <!-- ─── SECTION 3: Year-by-year sim ─── -->
+      <div class="section">
+        <div class="section-label">Step 3</div>
+        <h2>Year-by-Year Fleet Update</h2>
+        <p>
+          Every year, the model does two things: (1) apply the survival curve to age every existing
+          cohort — some cars drop out; (2) add new registrations as a fresh age-0 cohort. Use the
+          slider to step through time.
+        </p>
+
+        <div class="equation">
+          Fleet(year, cohort) = Fleet(year−1, cohort) × p
+          <sub>surv</sub>
+          (age)&nbsp;&nbsp; +&nbsp;&nbsp; new sales(year)
+        </div>
+
+        <div class="chart-wrap">
+          <canvas id="simChart" width="900" height="300"></canvas>
+          <div class="slider-row">
+            <label>Year</label>
+            <input type="range" id="yearSlider" min="2015" max="2061" value="2015" step="1" />
+            <span class="slider-val" id="yearVal">2015</span>
+          </div>
+        </div>
+        <div class="callout">
+          <span class="callout-icon">&#9432;</span>
+          <span id="simCallout">
+            In 2015, the fleet is mostly petrol & diesel cars spread across many age cohorts.
+          </span>
+        </div>
+      </div>
+
+      <!-- ─── SECTION 4: Fleet composition ─── -->
+      <div class="section">
+        <div class="section-label">Step 4</div>
+        <h2>Fleet Composition Over Time</h2>
+        <p>
+          Summing all surviving cohorts each year gives the total fleet split by drivetrain. Even
+          though new BEV sales hit 100% by 2035, old petrol and diesel cars linger in the fleet for
+          years — the transition takes until the late 2050s.
+        </p>
+
+        <div class="chart-wrap">
+          <div class="tab-row">
+            <button
+              class="tab-btn active"
+              data-mode="absolute"
+              onclick="setFleetMode('absolute', this)"
+            >
+              Absolute
+            </button>
+            <button class="tab-btn" data-mode="percent" onclick="setFleetMode('percent', this)">
+              Share %
+            </button>
+          </div>
+          <canvas id="fleetChart" width="900" height="360"></canvas>
+          <div class="legend-row">
+            <div class="legend-item">
+              <div class="legend-dot" style="background: #edae40"></div>
+              Petrol
+            </div>
+            <div class="legend-item">
+              <div class="legend-dot" style="background: #5e5e5e"></div>
+              Diesel
+            </div>
+            <div class="legend-item">
+              <div class="legend-dot" style="background: #92a7d4"></div>
+              BEV
+            </div>
+            <div class="legend-item">
+              <div class="legend-dot" style="background: #72bab6"></div>
+              Hybrid
+            </div>
+          </div>
+        </div>
+        <div class="callout">
+          <span class="callout-icon">&#9432;</span>
+          <span>
+            This is the key insight:
+            <strong>new sales ≠ fleet composition</strong>
+            . Even with 100% BEV sales from 2035, it takes until ~2055 for BEVs to become 90%+ of
+            the fleet, because older ICE cars survive for years.
+          </span>
+        </div>
+      </div>
+
+      <!-- ─── SECTION 5: Calibration ─── -->
+      <div class="section">
+        <div class="section-label">Step 5</div>
+        <h2>Calibration &amp; Validation</h2>
+        <p>
+          The Weibull curve was originally fitted to a cross-sectional age snapshot — not
+          year-by-year cohort tracking. Applied as annual retirement probabilities, it over-retires
+          old ICE cars from the 2015 starting fleet, causing the raw model to drift ~13% below
+          observed stock by 2024.
+        </p>
+
+        <div class="equation">
+          Correction: Petrol + Diesel = VEH1107
+          <sub>observed</sub>
+          − BEV
+          <sub>raw</sub>
+          − Hybrid
+          <sub>raw</sub>
+        </div>
+
+        <p>
+          The fix is targeted: BEV and Hybrid cohorts are all young (age ≤9 in 2024) so the Weibull
+          barely retires any — the raw model is already accurate for them. Only the Petrol + Diesel
+          total is corrected to match government data, keeping the same Petrol:Diesel ratio as the
+          raw model.
+        </p>
+
+        <div class="chart-wrap">
+          <canvas id="calibChart" width="900" height="340"></canvas>
+          <div class="legend-row">
+            <div class="legend-item">
+              <div class="legend-dot" style="background: #edae40"></div>
+              Raw model (Weibull only)
+            </div>
+            <div class="legend-item">
+              <div class="legend-dot" style="background: #009cde"></div>
+              VEH1107 observed
+            </div>
+            <div class="legend-item">
+              <div class="legend-dot" style="background: #62a711"></div>
+              Calibrated model
+            </div>
+          </div>
+        </div>
+
+        <div class="chart-wrap">
+          <canvas id="calibErrorChart" width="900" height="220"></canvas>
+          <div class="legend-row">
+            <div class="legend-item">
+              <div class="legend-dot" style="background: #edae40"></div>
+              Raw model error %
+            </div>
+            <div class="legend-item">
+              <div class="legend-dot" style="background: #62a711"></div>
+              Calibrated error %
+            </div>
+          </div>
+        </div>
+
+        <div class="callout">
+          <span class="callout-icon">&#9432;</span>
+          <span id="calibCallout">
+            The raw model underestimates the fleet by up to 13% because the Weibull over-retires old
+            petrol/diesel cars. The calibrated model corrects this using observed VEH1107 data, then
+            holds the 2024 correction factor constant for future projections.
+          </span>
+        </div>
+      </div>
+
+      <!-- ─── SECTION 6: BEV validation ─── -->
+      <div class="section">
+        <div class="section-label">Step 5b</div>
+        <h2>BEV Fleet Validation</h2>
+        <p>
+          Since BEVs are too young for significant Weibull retirement, the modelled BEV fleet should
+          closely track cumulative new registrations — which serves as an upper bound (no BEVs
+          scrapped yet).
+        </p>
+
+        <div class="chart-wrap">
+          <canvas id="bevValidChart" width="900" height="300"></canvas>
+          <div class="legend-row">
+            <div class="legend-item">
+              <div class="legend-dot" style="background: #92a7d4"></div>
+              Model BEV fleet
+            </div>
+            <div class="legend-item">
+              <div class="legend-dot" style="background: #62a711; border: 1px dashed #62a711"></div>
+              Cumulative BEV registrations (upper bound)
+            </div>
+          </div>
+        </div>
+
+        <div class="callout">
+          <span class="callout-icon">&#9432;</span>
+          <span>
+            The model's BEV count sits just above cumulative registrations because the 2015 starting
+            fleet includes a small number of pre-2015 BEVs (~100k). The close match confirms no
+            calibration is needed for BEV/Hybrid.
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // ═══════════════════════════════════════════════════════════════════
+      // CONSTANTS
+      // ═══════════════════════════════════════════════════════════════════
+      const WEIBULL_K = 4.4,
+        WEIBULL_ETA = 14.6;
+      const COLORS = { Petrol: "#EDAE40", Diesel: "#5E5E5E", BEV: "#92A7D4", Hybrid: "#72BAB6" };
+      const DT = ["Petrol", "Diesel", "BEV", "Hybrid"];
+
+      function S(a) {
+        return Math.exp(-Math.pow(a / WEIBULL_ETA, WEIBULL_K));
+      }
+      function pSurv(a) {
+        return S(a + 1) / Math.max(S(a), 1e-12);
+      }
+
+      // ═══════════════════════════════════════════════════════════════════
+      // SECTION 1 — Weibull chart
+      // ═══════════════════════════════════════════════════════════════════
+      const weibullCanvas = document.getElementById("weibullChart");
+      const wCtx = weibullCanvas.getContext("2d");
+
+      function drawWeibull(highlightAge) {
+        const W = weibullCanvas.width,
+          H = weibullCanvas.height;
+        const pad = { l: 54, r: 20, t: 20, b: 40 };
+        const cw = W - pad.l - pad.r,
+          ch = H - pad.t - pad.b;
+        wCtx.clearRect(0, 0, W, H);
+
+        // grid
+        wCtx.strokeStyle = "#2a2d35";
+        wCtx.lineWidth = 1;
+        for (let i = 0; i <= 10; i++) {
+          let y = pad.t + ch * (1 - i / 10);
+          wCtx.beginPath();
+          wCtx.moveTo(pad.l, y);
+          wCtx.lineTo(W - pad.r, y);
+          wCtx.stroke();
+        }
+
+        // survival curve (filled)
+        wCtx.beginPath();
+        wCtx.moveTo(pad.l, pad.t + ch);
+        for (let a = 0; a <= 30; a++) {
+          let x = pad.l + (a / 30) * cw,
+            y = pad.t + ch * (1 - S(a));
+          wCtx.lineTo(x, y);
+        }
+        wCtx.lineTo(pad.l + cw, pad.t + ch);
+        wCtx.closePath();
+        wCtx.fillStyle = "rgba(146,167,212,0.12)";
+        wCtx.fill();
+
+        // survival curve (line)
+        wCtx.beginPath();
+        for (let a = 0; a <= 30; a++) {
+          let x = pad.l + (a / 30) * cw,
+            y = pad.t + ch * (1 - S(a));
+          a === 0 ? wCtx.moveTo(x, y) : wCtx.lineTo(x, y);
+        }
+        wCtx.strokeStyle = "#92A7D4";
+        wCtx.lineWidth = 2.5;
+        wCtx.stroke();
+
+        // conditional survival (dashed)
+        wCtx.beginPath();
+        for (let a = 0; a <= 29; a++) {
+          let x = pad.l + (a / 30) * cw,
+            y = pad.t + ch * (1 - pSurv(a));
+          a === 0 ? wCtx.moveTo(x, y) : wCtx.lineTo(x, y);
+        }
+        wCtx.strokeStyle = "#72BAB6";
+        wCtx.lineWidth = 2;
+        wCtx.setLineDash([6, 4]);
+        wCtx.stroke();
+        wCtx.setLineDash([]);
+
+        // highlight dot
+        let hx = pad.l + (highlightAge / 30) * cw;
+        let hy_s = pad.t + ch * (1 - S(highlightAge));
+        let hy_p = pad.t + ch * (1 - pSurv(highlightAge));
+        wCtx.fillStyle = "#92A7D4";
+        wCtx.beginPath();
+        wCtx.arc(hx, hy_s, 6, 0, Math.PI * 2);
+        wCtx.fill();
+        wCtx.fillStyle = "#72BAB6";
+        wCtx.beginPath();
+        wCtx.arc(hx, hy_p, 6, 0, Math.PI * 2);
+        wCtx.fill();
+
+        // vertical line
+        wCtx.strokeStyle = "rgba(255,255,255,0.15)";
+        wCtx.lineWidth = 1;
+        wCtx.setLineDash([3, 3]);
+        wCtx.beginPath();
+        wCtx.moveTo(hx, pad.t);
+        wCtx.lineTo(hx, pad.t + ch);
+        wCtx.stroke();
+        wCtx.setLineDash([]);
+
+        // axes labels
+        wCtx.fillStyle = "#666";
+        wCtx.font = "11px Inter, system-ui";
+        wCtx.textAlign = "center";
+        for (let a = 0; a <= 30; a += 5) {
+          wCtx.fillText(a, pad.l + (a / 30) * cw, pad.t + ch + 18);
+        }
+        wCtx.fillText("Age (years)", pad.l + cw / 2, H - 4);
+        wCtx.textAlign = "right";
+        for (let i = 0; i <= 10; i += 2) {
+          wCtx.fillText(i * 10 + "%", pad.l - 8, pad.t + ch * (1 - i / 10) + 4);
+        }
+
+        // curve labels
+        wCtx.font = "12px Inter, system-ui";
+        wCtx.fillStyle = "#92A7D4";
+        wCtx.textAlign = "left";
+        wCtx.fillText("Survival S(a)", pad.l + 8, pad.t + 14);
+        wCtx.fillStyle = "#72BAB6";
+        wCtx.fillText("Conditional p(a)", pad.l + 8, pad.t + 30);
+      }
+
+      const ageSlider = document.getElementById("ageSlider");
+      ageSlider.addEventListener("input", () => {
+        const a = +ageSlider.value;
+        document.getElementById("ageVal").textContent = a + " yrs";
+        document.getElementById("calloutAge").textContent = a;
+        document.getElementById("calloutSurv").textContent = (S(a) * 100).toFixed(1) + "%";
+        document.getElementById("calloutCond").textContent = (pSurv(a) * 100).toFixed(1) + "%";
+        drawWeibull(a);
+      });
+      drawWeibull(13);
+
+      // ═══════════════════════════════════════════════════════════════════
+      // SECTION 2 — Cohort grid
+      // ═══════════════════════════════════════════════════════════════════
+      // Disaggregate wide brackets using Weibull weights, matching the notebook
+      function distributeWeibull(total, ages) {
+        const weights = ages.map((a) => S(a));
+        const wSum = weights.reduce((a, b) => a + b, 0);
+        return ages.map((a, i) => ({ age: a, count: (total * weights[i]) / wSum }));
+      }
+
+      const cohortData2015 = [
+        { label: "0–1 yr", count: 2496, age: 0 },
+        { label: "1–2 yr", count: 2365, age: 1 },
+        { label: "2–3 yr", count: 2138, age: 2 },
+        { label: "3–4 yr", count: 1857, age: 3 },
+        { label: "4–5 yr", count: 1769, age: 4 },
+        { label: "5–6 yr", count: 1839, age: 5 },
+        // 6–9 yr bracket disaggregated with Weibull weights
+        ...distributeWeibull(7709, [6, 7, 8, 9]).map((c) => ({
+          label: c.age + "–" + (c.age + 1) + " yr",
+          count: Math.round(c.count),
+          age: c.age,
+        })),
+        // 10–12 yr bracket disaggregated
+        ...distributeWeibull(5461, [10, 11, 12]).map((c) => ({
+          label: c.age + "–" + (c.age + 1) + " yr",
+          count: Math.round(c.count),
+          age: c.age,
+        })),
+        // 13–25 yr bracket disaggregated
+        ...distributeWeibull(
+          4669,
+          Array.from({ length: 13 }, (_, i) => 13 + i),
+        ).map((c) => ({
+          label: c.age + "–" + (c.age + 1) + " yr",
+          count: Math.round(c.count),
+          age: c.age,
+        })),
+      ];
+      const gridEl = document.getElementById("cohortGrid");
+      const legendEl = document.getElementById("cohortLegend");
+      const ageColorScale = (age) => {
+        const t = Math.min(age / 25, 1);
+        const r = Math.round(146 + (93 - 146) * t);
+        const g = Math.round(167 + (93 - 167) * t);
+        const b = Math.round(212 + (130 - 212) * t);
+        return `rgb(${r},${g},${b})`;
+      };
+
+      cohortData2015.forEach((c) => {
+        const cells = Math.round(c.count / 100);
+        for (let i = 0; i < cells; i++) {
+          const div = document.createElement("div");
+          div.className = "cohort-cell";
+          div.style.background = ageColorScale(c.age);
+          div.style.opacity = 1 - c.age * 0.025;
+          const tip = document.createElement("span");
+          tip.className = "tooltip";
+          tip.textContent = c.label + " — " + c.count.toLocaleString() + "k";
+          div.appendChild(tip);
+          gridEl.appendChild(div);
+        }
+      });
+
+      ["0–1 yr", "5–6 yr", "10–11 yr", "13+ yr"].forEach((l, i) => {
+        const ages = [0, 5, 10, 16];
+        const item = document.createElement("div");
+        item.className = "legend-item";
+        item.innerHTML = `<div class="legend-dot" style="background:${ageColorScale(ages[i])};opacity:${1 - ages[i] * 0.025}"></div>${l}`;
+        legendEl.appendChild(item);
+      });
+
+      // ═══════════════════════════════════════════════════════════════════
+      // SECTION 3 — Year-by-year simulation chart
+      // ═══════════════════════════════════════════════════════════════════
+      // Simplified cohort model
+      const newSales = {
+        2015: [1303, 1284, 10, 62],
+        2016: [1339, 1294, 10, 78],
+        2017: [1369, 1074, 14, 105],
+        2018: [1490, 756, 16, 130],
+        2019: [1540, 622, 38, 146],
+        2020: [1008, 304, 108, 235],
+        2021: [912, 195, 190, 378],
+        2022: [821, 128, 267, 432],
+        2023: [899, 126, 314, 604],
+        2024: [749, 111, 382, 757],
+      };
+      // Projected (simplified)
+      for (let y = 2025; y <= 2061; y++) {
+        const total = 2060 + (y - 2025) * 23.5;
+        const bevR = y < 2035 ? Math.min(0.28 + (y - 2025) * 0.072, 1) : 1;
+        const hybR = y < 2035 ? Math.max(0.35 - (y - 2025) * 0.035, 0) : 0;
+        const iceR = Math.max(1 - bevR - hybR, 0);
+        newSales[y] = [
+          Math.round(total * iceR * 0.85),
+          Math.round(total * iceR * 0.15),
+          Math.round(total * bevR),
+          Math.round(total * hybR),
+        ];
+      }
+
+      // Build fleet model
+      const fleet = {};
+      // Init 2015 from cohort data — split by 2015 new-car proportions (matching notebook)
+      // Petrol 48.9%, Diesel 48.2%, BEV 0.4%, Hybrid 2.3%
+      fleet[2015] = {};
+      cohortData2015.forEach((c) => {
+        const regYear = 2015 - c.age;
+        // Accumulate if multiple entries map to same regYear (shouldn't happen after disaggregation, but safe)
+        if (!fleet[2015][regYear]) fleet[2015][regYear] = [0, 0, 0, 0];
+        fleet[2015][regYear][0] += c.count * 0.489;
+        fleet[2015][regYear][1] += c.count * 0.482;
+        fleet[2015][regYear][2] += c.count * 0.004;
+        fleet[2015][regYear][3] += c.count * 0.023;
+      });
+      // Override 2015 new sales
+      fleet[2015][2015] = newSales[2015];
+
+      for (let year = 2016; year <= 2061; year++) {
+        fleet[year] = {};
+        for (const [ry, counts] of Object.entries(fleet[year - 1])) {
+          const age = year - 1 - parseInt(ry);
+          const p = pSurv(age);
+          if (p > 0.001) {
+            fleet[year][ry] = counts.map((c) => c * p);
+          }
+        }
+        fleet[year][year] = newSales[year];
+      }
+
+      // Aggregate fleet totals
+      function fleetTotals(year) {
+        const totals = [0, 0, 0, 0];
+        for (const counts of Object.values(fleet[year])) {
+          for (let i = 0; i < 4; i++) totals[i] += counts[i];
+        }
+        return totals;
+      }
+
+      const simCanvas = document.getElementById("simChart");
+      const sCtx = simCanvas.getContext("2d");
+
+      // Pre-compute fixed y-axis max across all years
+      let SIM_MAX_H = 0;
+      for (let y = 2015; y <= 2061; y++) {
+        for (const counts of Object.values(fleet[y])) {
+          const total = counts.reduce((a, b) => a + b, 0);
+          if (total > SIM_MAX_H) SIM_MAX_H = total;
+        }
+      }
+      SIM_MAX_H = Math.ceil(SIM_MAX_H / 100) * 100; // round up to nearest 100
+
+      function drawSim(year) {
+        const W = simCanvas.width,
+          H = simCanvas.height;
+        const pad = { l: 54, r: 20, t: 16, b: 44 };
+        const cw = W - pad.l - pad.r,
+          ch = H - pad.t - pad.b;
+        sCtx.clearRect(0, 0, W, H);
+
+        // Collect cohort ages and sizes for this year
+        const cohorts = [];
+        for (const [ry, counts] of Object.entries(fleet[year])) {
+          const age = year - parseInt(ry);
+          const total = counts.reduce((a, b) => a + b, 0);
+          if (total > 5) cohorts.push({ age, counts, total });
+        }
+        cohorts.sort((a, b) => a.age - b.age);
+
+        const maxAge = Math.max(30, ...cohorts.map((c) => c.age));
+        const maxH = SIM_MAX_H;
+
+        // grid
+        sCtx.strokeStyle = "#2a2d35";
+        sCtx.lineWidth = 1;
+        for (let i = 0; i <= 5; i++) {
+          let y = pad.t + ch * (1 - i / 5);
+          sCtx.beginPath();
+          sCtx.moveTo(pad.l, y);
+          sCtx.lineTo(W - pad.r, y);
+          sCtx.stroke();
+        }
+
+        // bars
+        const barW = Math.max(cw / (maxAge + 2) - 2, 4);
+        const colors = ["#EDAE40", "#5E5E5E", "#92A7D4", "#72BAB6"];
+        cohorts.forEach((c) => {
+          const x = pad.l + (c.age / (maxAge + 1)) * cw;
+          let yBottom = pad.t + ch;
+          c.counts.forEach((val, i) => {
+            const h = (val / maxH) * ch;
+            sCtx.fillStyle = colors[i];
+            sCtx.fillRect(x, yBottom - h, barW, h);
+            yBottom -= h;
+          });
+        });
+
+        // Highlight new cohort (age 0)
+        if (cohorts.length > 0 && cohorts[0].age === 0) {
+          const x = pad.l;
+          sCtx.strokeStyle = "#fff";
+          sCtx.lineWidth = 1.5;
+          sCtx.strokeRect(
+            x - 1,
+            pad.t + ch - (cohorts[0].total / maxH) * ch - 1,
+            barW + 2,
+            (cohorts[0].total / maxH) * ch + 2,
+          );
+          sCtx.fillStyle = "#fff";
+          sCtx.font = "10px Inter, system-ui";
+          sCtx.textAlign = "center";
+          sCtx.fillText("NEW", x + barW / 2, pad.t + ch - (cohorts[0].total / maxH) * ch - 6);
+        }
+
+        // x-axis labels
+        sCtx.fillStyle = "#666";
+        sCtx.font = "10px Inter, system-ui";
+        sCtx.textAlign = "center";
+        for (let a = 0; a <= maxAge; a += 5) {
+          sCtx.fillText(a, pad.l + (a / (maxAge + 1)) * cw + barW / 2, pad.t + ch + 16);
+        }
+        sCtx.fillText("Cohort age (years)", pad.l + cw / 2, H - 4);
+
+        // y-axis
+        sCtx.textAlign = "right";
+        for (let i = 0; i <= 5; i++) {
+          sCtx.fillText(
+            Math.round((maxH * i) / 5).toLocaleString() + "k",
+            pad.l - 8,
+            pad.t + ch * (1 - i / 5) + 4,
+          );
+        }
+
+        // legend
+        sCtx.textAlign = "left";
+        sCtx.font = "11px Inter, system-ui";
+        const lx = W - pad.r - 200;
+        DT.forEach((dt, i) => {
+          sCtx.fillStyle = colors[i];
+          sCtx.fillRect(lx, pad.t + 4 + i * 16, 10, 10);
+          sCtx.fillStyle = "#aaa";
+          sCtx.fillText(dt, lx + 14, pad.t + 13 + i * 16);
+        });
+      }
+
+      const yearSlider = document.getElementById("yearSlider");
+      yearSlider.addEventListener("input", () => {
+        const y = +yearSlider.value;
+        document.getElementById("yearVal").textContent = y;
+        drawSim(y);
+        const totals = fleetTotals(y);
+        const total = totals.reduce((a, b) => a + b, 0);
+        const bevPct = ((totals[2] / total) * 100).toFixed(0);
+        const icePct = (((totals[0] + totals[1]) / total) * 100).toFixed(0);
+        const nCohorts = Object.keys(fleet[y]).length;
+        document.getElementById("simCallout").innerHTML =
+          `In <strong>${y}</strong>, the fleet contains <strong>${(total / 1000).toFixed(1)}M</strong> cars across <strong>${nCohorts}</strong> surviving cohorts. BEV share: <strong>${bevPct}%</strong>, ICE share: <strong>${icePct}%</strong>.`;
+      });
+      drawSim(2015);
+
+      // ═══════════════════════════════════════════════════════════════════
+      // SECTION 4 — Fleet composition stacked area
+      // ═══════════════════════════════════════════════════════════════════
+      const fleetCanvas = document.getElementById("fleetChart");
+      const fCtx = fleetCanvas.getContext("2d");
+      let fleetMode = "absolute";
+
+      function setFleetMode(mode, btn) {
+        fleetMode = mode;
+        document.querySelectorAll(".tab-btn").forEach((b) => b.classList.remove("active"));
+        btn.classList.add("active");
+        drawFleet();
+      }
+
+      function drawFleet() {
+        const W = fleetCanvas.width,
+          H = fleetCanvas.height;
+        const pad = { l: 60, r: 20, t: 20, b: 40 };
+        const cw = W - pad.l - pad.r,
+          ch = H - pad.t - pad.b;
+        fCtx.clearRect(0, 0, W, H);
+
+        const years = [];
+        const stacks = [[], [], [], []]; // petrol, diesel, bev, hybrid
+        for (let y = 2015; y <= 2061; y++) {
+          years.push(y);
+          const t = fleetTotals(y);
+          const total = t.reduce((a, b) => a + b, 0);
+          if (fleetMode === "percent") {
+            for (let i = 0; i < 4; i++) stacks[i].push((t[i] / total) * 100);
+          } else {
+            for (let i = 0; i < 4; i++) stacks[i].push(t[i]);
+          }
+        }
+
+        const maxY =
+          fleetMode === "percent"
+            ? 100
+            : Math.max(...years.map((_, i) => stacks.reduce((s, st) => s + st[i], 0))) * 1.05;
+        const colors = ["#EDAE40", "#5E5E5E", "#92A7D4", "#72BAB6"];
+
+        // grid
+        fCtx.strokeStyle = "#2a2d35";
+        fCtx.lineWidth = 1;
+        const gridSteps = fleetMode === "percent" ? 5 : 5;
+        for (let i = 0; i <= gridSteps; i++) {
+          let y = pad.t + ch * (1 - i / gridSteps);
+          fCtx.beginPath();
+          fCtx.moveTo(pad.l, y);
+          fCtx.lineTo(W - pad.r, y);
+          fCtx.stroke();
+        }
+
+        // stacked area
+        const cumulative = years.map(() => 0);
+        for (let si = 0; si < 4; si++) {
+          const prevCum = [...cumulative];
+          for (let i = 0; i < years.length; i++) cumulative[i] += stacks[si][i];
+
+          fCtx.beginPath();
+          for (let i = 0; i < years.length; i++) {
+            const x = pad.l + (i / (years.length - 1)) * cw;
+            const y = pad.t + ch * (1 - cumulative[i] / maxY);
+            i === 0 ? fCtx.moveTo(x, y) : fCtx.lineTo(x, y);
+          }
+          for (let i = years.length - 1; i >= 0; i--) {
+            const x = pad.l + (i / (years.length - 1)) * cw;
+            const y = pad.t + ch * (1 - prevCum[i] / maxY);
+            fCtx.lineTo(x, y);
+          }
+          fCtx.closePath();
+          fCtx.fillStyle = colors[si];
+          fCtx.globalAlpha = 0.85;
+          fCtx.fill();
+          fCtx.globalAlpha = 1;
+        }
+
+        // 2035 marker line
+        const idx2035 = 2035 - 2015;
+        const x2035 = pad.l + (idx2035 / (years.length - 1)) * cw;
+        fCtx.strokeStyle = "rgba(255,255,255,0.3)";
+        fCtx.lineWidth = 1;
+        fCtx.setLineDash([4, 4]);
+        fCtx.beginPath();
+        fCtx.moveTo(x2035, pad.t);
+        fCtx.lineTo(x2035, pad.t + ch);
+        fCtx.stroke();
+        fCtx.setLineDash([]);
+        fCtx.fillStyle = "#888";
+        fCtx.font = "10px Inter, system-ui";
+        fCtx.textAlign = "center";
+        fCtx.fillText("100% BEV sales", x2035, pad.t + ch + 32);
+
+        // axes
+        fCtx.fillStyle = "#666";
+        fCtx.font = "10px Inter, system-ui";
+        fCtx.textAlign = "center";
+        for (let y = 2015; y <= 2061; y += 5) {
+          const x = pad.l + ((y - 2015) / (years.length - 1)) * cw;
+          fCtx.fillText(y, x, pad.t + ch + 16);
+        }
+        fCtx.textAlign = "right";
+        for (let i = 0; i <= gridSteps; i++) {
+          const val = (maxY * i) / gridSteps;
+          const label =
+            fleetMode === "percent" ? val.toFixed(0) + "%" : (val / 1000).toFixed(0) + "M";
+          fCtx.fillText(label, pad.l - 8, pad.t + ch * (1 - i / gridSteps) + 4);
+        }
+      }
+      drawFleet();
+
+      // ═══════════════════════════════════════════════════════════════════
+      // SECTION 5 — Calibration charts
+      // ═══════════════════════════════════════════════════════════════════
+
+      // VEH1107 observed fleet totals (excl. Unknown reg year), thousands
+      const VEH1107 = {
+        2015: 30305.6,
+        2016: 31151.6,
+        2017: 31566.8,
+        2018: 31934.9,
+        2019: 32354.2,
+        2020: 32197.6,
+        2021: 32407.5,
+        2022: 32712.3,
+        2023: 33109.1,
+        2024: 33494.7,
+      };
+
+      // Raw model totals 2015–2024
+      const rawTotals = {};
+      const calibTotals = {};
+      const calYears = [];
+      for (let y = 2015; y <= 2024; y++) {
+        calYears.push(y);
+        const t = fleetTotals(y);
+        rawTotals[y] = t.reduce((a, b) => a + b, 0); // thousands
+
+        // Calibrated: BEV + Hybrid from raw, ICE corrected to VEH1107
+        const bevRaw = t[2],
+          hybRaw = t[3];
+        const iceCorrected = VEH1107[y] - bevRaw - hybRaw;
+        calibTotals[y] = iceCorrected + bevRaw + hybRaw; // should ≈ VEH1107[y]
+      }
+
+      // --- Chart 1: Total fleet lines ---
+      const calibCanvas = document.getElementById("calibChart");
+      const cCtx = calibCanvas.getContext("2d");
+
+      function drawCalibChart() {
+        const W = calibCanvas.width,
+          H = calibCanvas.height;
+        const pad = { l: 64, r: 24, t: 24, b: 40 };
+        const cw = W - pad.l - pad.r,
+          ch = H - pad.t - pad.b;
+        cCtx.clearRect(0, 0, W, H);
+
+        // Determine y range
+        let allVals = [];
+        calYears.forEach((y) => {
+          allVals.push(VEH1107[y], rawTotals[y], calibTotals[y]);
+        });
+        const minY = Math.min(...allVals) * 0.95;
+        const maxY = Math.max(...allVals) * 1.02;
+
+        // grid
+        cCtx.strokeStyle = "#2a2d35";
+        cCtx.lineWidth = 1;
+        for (let i = 0; i <= 5; i++) {
+          let yy = pad.t + ch * (1 - i / 5);
+          cCtx.beginPath();
+          cCtx.moveTo(pad.l, yy);
+          cCtx.lineTo(W - pad.r, yy);
+          cCtx.stroke();
+        }
+
+        function xPos(yr) {
+          return pad.l + ((yr - 2015) / 9) * cw;
+        }
+        function yPos(v) {
+          return pad.t + ch * (1 - (v - minY) / (maxY - minY));
+        }
+
+        // Draw lines helper
+        function drawLine(data, color, dashed, dotSize) {
+          cCtx.beginPath();
+          cCtx.strokeStyle = color;
+          cCtx.lineWidth = 2.5;
+          if (dashed) cCtx.setLineDash([6, 4]);
+          else cCtx.setLineDash([]);
+          calYears.forEach((y, i) => {
+            const x = xPos(y),
+              yy = yPos(data[y]);
+            i === 0 ? cCtx.moveTo(x, yy) : cCtx.lineTo(x, yy);
+          });
+          cCtx.stroke();
+          cCtx.setLineDash([]);
+          // dots
+          cCtx.fillStyle = color;
+          calYears.forEach((y) => {
+            cCtx.beginPath();
+            cCtx.arc(xPos(y), yPos(data[y]), dotSize || 4, 0, Math.PI * 2);
+            cCtx.fill();
+          });
+        }
+
+        // The gap area between raw and observed
+        cCtx.beginPath();
+        calYears.forEach((y, i) => {
+          const x = xPos(y),
+            yy = yPos(rawTotals[y]);
+          i === 0 ? cCtx.moveTo(x, yy) : cCtx.lineTo(x, yy);
+        });
+        for (let i = calYears.length - 1; i >= 0; i--) {
+          const y = calYears[i];
+          cCtx.lineTo(xPos(y), yPos(VEH1107[y]));
+        }
+        cCtx.closePath();
+        cCtx.fillStyle = "rgba(237,174,64,0.1)";
+        cCtx.fill();
+
+        // Label the gap
+        const gapX = xPos(2021);
+        const gapTop = yPos(VEH1107[2021]);
+        const gapBot = yPos(rawTotals[2021]);
+        cCtx.fillStyle = "#EDAE40";
+        cCtx.font = "11px Inter, system-ui";
+        cCtx.textAlign = "left";
+        const gapPct = (((VEH1107[2021] - rawTotals[2021]) / VEH1107[2021]) * 100).toFixed(0);
+        // arrow
+        cCtx.strokeStyle = "rgba(237,174,64,0.5)";
+        cCtx.lineWidth = 1;
+        cCtx.beginPath();
+        cCtx.moveTo(gapX + 60, gapTop + 4);
+        cCtx.lineTo(gapX + 60, gapBot - 4);
+        cCtx.stroke();
+        cCtx.beginPath();
+        cCtx.moveTo(gapX + 57, gapTop + 8);
+        cCtx.lineTo(gapX + 60, gapTop + 2);
+        cCtx.lineTo(gapX + 63, gapTop + 8);
+        cCtx.stroke();
+        cCtx.beginPath();
+        cCtx.moveTo(gapX + 57, gapBot - 8);
+        cCtx.lineTo(gapX + 60, gapBot - 2);
+        cCtx.lineTo(gapX + 63, gapBot - 8);
+        cCtx.stroke();
+        cCtx.fillText("gap: ~" + gapPct + "%", gapX + 68, (gapTop + gapBot) / 2 + 4);
+
+        drawLine(rawTotals, "#EDAE40", true, 4);
+        drawLine(VEH1107, "#009CDE", false, 5);
+        drawLine(calibTotals, "#62A711", false, 4);
+
+        // x-axis
+        cCtx.fillStyle = "#666";
+        cCtx.font = "11px Inter, system-ui";
+        cCtx.textAlign = "center";
+        calYears.forEach((y) => {
+          cCtx.fillText(y, xPos(y), pad.t + ch + 18);
+        });
+
+        // y-axis
+        cCtx.textAlign = "right";
+        for (let i = 0; i <= 5; i++) {
+          const v = minY + ((maxY - minY) * i) / 5;
+          cCtx.fillText((v / 1000).toFixed(1) + "M", pad.l - 8, pad.t + ch * (1 - i / 5) + 4);
+        }
+
+        // Title
+        cCtx.fillStyle = "#ccc";
+        cCtx.font = "12px Inter, system-ui";
+        cCtx.textAlign = "left";
+        cCtx.fillText(
+          "Total Car Fleet: Raw Model vs Observed vs Calibrated (2015–2024)",
+          pad.l,
+          pad.t - 6,
+        );
+      }
+      drawCalibChart();
+
+      // --- Chart 2: Error % bars ---
+      const errCanvas = document.getElementById("calibErrorChart");
+      const eCtx = errCanvas.getContext("2d");
+
+      function drawErrorChart() {
+        const W = errCanvas.width,
+          H = errCanvas.height;
+        const pad = { l: 64, r: 24, t: 24, b: 40 };
+        const cw = W - pad.l - pad.r,
+          ch = H - pad.t - pad.b;
+        eCtx.clearRect(0, 0, W, H);
+
+        const rawErrs = calYears.map((y) => ((rawTotals[y] - VEH1107[y]) / VEH1107[y]) * 100);
+        const calErrs = calYears.map((y) => ((calibTotals[y] - VEH1107[y]) / VEH1107[y]) * 100);
+        const maxErr =
+          Math.max(2, Math.max(...rawErrs.map(Math.abs), ...calErrs.map(Math.abs))) * 1.2;
+
+        // grid
+        eCtx.strokeStyle = "#2a2d35";
+        eCtx.lineWidth = 1;
+        for (let i = -2; i <= 2; i++) {
+          let yy = pad.t + ch / 2 - (i / maxErr) * (ch / 2);
+          eCtx.beginPath();
+          eCtx.moveTo(pad.l, yy);
+          eCtx.lineTo(W - pad.r, yy);
+          eCtx.stroke();
+        }
+        // zero line
+        eCtx.strokeStyle = "rgba(255,255,255,0.2)";
+        eCtx.lineWidth = 1;
+        const zeroY = pad.t + ch / 2;
+        eCtx.beginPath();
+        eCtx.moveTo(pad.l, zeroY);
+        eCtx.lineTo(W - pad.r, zeroY);
+        eCtx.stroke();
+
+        const barW = (cw / calYears.length) * 0.35;
+        calYears.forEach((y, i) => {
+          const x = pad.l + ((i + 0.5) / calYears.length) * cw;
+
+          // Raw error bar
+          const rawH = (rawErrs[i] / maxErr) * (ch / 2);
+          eCtx.fillStyle = "#EDAE40";
+          eCtx.globalAlpha = 0.7;
+          eCtx.fillRect(x - barW - 1, zeroY, barW, -rawH);
+
+          // Calibrated error bar
+          const calH = (calErrs[i] / maxErr) * (ch / 2);
+          eCtx.fillStyle = "#62A711";
+          eCtx.fillRect(x + 1, zeroY, barW, -calH);
+
+          eCtx.globalAlpha = 1;
+
+          // Error labels
+          eCtx.fillStyle = "#888";
+          eCtx.font = "9px Inter, system-ui";
+          eCtx.textAlign = "center";
+          const rawLabelY = zeroY - rawH + (rawErrs[i] < 0 ? 12 : -6);
+          eCtx.fillStyle = "#EDAE40";
+          eCtx.fillText(rawErrs[i].toFixed(1) + "%", x - barW / 2 - 1, rawLabelY);
+        });
+
+        // x-axis
+        eCtx.fillStyle = "#666";
+        eCtx.font = "11px Inter, system-ui";
+        eCtx.textAlign = "center";
+        calYears.forEach((y, i) => {
+          const x = pad.l + ((i + 0.5) / calYears.length) * cw;
+          eCtx.fillText(y, x, pad.t + ch + 18);
+        });
+
+        // y-axis
+        eCtx.textAlign = "right";
+        eCtx.fillStyle = "#666";
+        eCtx.fillText("0%", pad.l - 8, zeroY + 4);
+        eCtx.fillText("-" + maxErr.toFixed(0) + "%", pad.l - 8, pad.t + ch + 4);
+        eCtx.fillText("+" + maxErr.toFixed(0) + "%", pad.l - 8, pad.t + 10);
+
+        // Title
+        eCtx.fillStyle = "#ccc";
+        eCtx.font = "12px Inter, system-ui";
+        eCtx.textAlign = "left";
+        eCtx.fillText("Model Error vs Observed VEH1107 (%)", pad.l, pad.t - 6);
+      }
+      drawErrorChart();
+
+      // --- BEV Validation chart ---
+      const bevCanvas = document.getElementById("bevValidChart");
+      const bCtx = bevCanvas.getContext("2d");
+
+      // BEV new sales per year (thousands) from notebook
+      const bevNewSales = {
+        2015: 10.091,
+        2016: 10.429,
+        2017: 13.913,
+        2018: 15.756,
+        2019: 38.007,
+        2020: 107.913,
+        2021: 190.42,
+        2022: 266.875,
+        2023: 314.222,
+        2024: 381.869,
+      };
+
+      function drawBevValid() {
+        const W = bevCanvas.width,
+          H = bevCanvas.height;
+        const pad = { l: 64, r: 24, t: 24, b: 40 };
+        const cw = W - pad.l - pad.r,
+          ch = H - pad.t - pad.b;
+        bCtx.clearRect(0, 0, W, H);
+
+        // Cumulative BEV registrations
+        const cumBev = {};
+        let cum = 0;
+        calYears.forEach((y) => {
+          cum += bevNewSales[y];
+          cumBev[y] = cum;
+        });
+
+        // Model BEV fleet
+        const modelBev = {};
+        calYears.forEach((y) => {
+          modelBev[y] = fleetTotals(y)[2];
+        });
+
+        let allVals = [];
+        calYears.forEach((y) => {
+          allVals.push(cumBev[y], modelBev[y]);
+        });
+        const maxY = Math.max(...allVals) * 1.1;
+
+        // grid
+        bCtx.strokeStyle = "#2a2d35";
+        bCtx.lineWidth = 1;
+        for (let i = 0; i <= 5; i++) {
+          let yy = pad.t + ch * (1 - i / 5);
+          bCtx.beginPath();
+          bCtx.moveTo(pad.l, yy);
+          bCtx.lineTo(W - pad.r, yy);
+          bCtx.stroke();
+        }
+
+        function xPos(yr) {
+          return pad.l + ((yr - 2015) / 9) * cw;
+        }
+        function yPos(v) {
+          return pad.t + ch * (1 - v / maxY);
+        }
+
+        // Fill between
+        bCtx.beginPath();
+        calYears.forEach((y, i) => {
+          const x = xPos(y);
+          i === 0 ? bCtx.moveTo(x, yPos(modelBev[y])) : bCtx.lineTo(x, yPos(modelBev[y]));
+        });
+        for (let i = calYears.length - 1; i >= 0; i--) {
+          bCtx.lineTo(xPos(calYears[i]), yPos(cumBev[calYears[i]]));
+        }
+        bCtx.closePath();
+        bCtx.fillStyle = "rgba(146,167,212,0.1)";
+        bCtx.fill();
+
+        // Model BEV line
+        bCtx.beginPath();
+        bCtx.strokeStyle = "#92A7D4";
+        bCtx.lineWidth = 2.5;
+        calYears.forEach((y, i) => {
+          const x = xPos(y),
+            yy = yPos(modelBev[y]);
+          i === 0 ? bCtx.moveTo(x, yy) : bCtx.lineTo(x, yy);
+        });
+        bCtx.stroke();
+        bCtx.fillStyle = "#92A7D4";
+        calYears.forEach((y) => {
+          bCtx.beginPath();
+          bCtx.arc(xPos(y), yPos(modelBev[y]), 4, 0, Math.PI * 2);
+          bCtx.fill();
+        });
+
+        // Cumulative reg line (dashed)
+        bCtx.beginPath();
+        bCtx.strokeStyle = "#62A711";
+        bCtx.lineWidth = 2;
+        bCtx.setLineDash([6, 4]);
+        calYears.forEach((y, i) => {
+          const x = xPos(y),
+            yy = yPos(cumBev[y]);
+          i === 0 ? bCtx.moveTo(x, yy) : bCtx.lineTo(x, yy);
+        });
+        bCtx.stroke();
+        bCtx.setLineDash([]);
+        bCtx.fillStyle = "#62A711";
+        calYears.forEach((y) => {
+          bCtx.beginPath();
+          bCtx.arc(xPos(y), yPos(cumBev[y]), 4, 0, Math.PI * 2);
+          bCtx.fill();
+        });
+
+        // Label the gap for 2024
+        const gapLabel = (modelBev[2024] - cumBev[2024]).toFixed(0) + "k";
+        bCtx.fillStyle = "#aaa";
+        bCtx.font = "11px Inter, system-ui";
+        bCtx.textAlign = "left";
+        bCtx.fillText("pre-2015 BEVs: ~" + gapLabel, xPos(2021) - 30, yPos(modelBev[2022]) - 16);
+
+        // x-axis
+        bCtx.fillStyle = "#666";
+        bCtx.font = "11px Inter, system-ui";
+        bCtx.textAlign = "center";
+        calYears.forEach((y) => {
+          bCtx.fillText(y, xPos(y), pad.t + ch + 18);
+        });
+
+        // y-axis
+        bCtx.textAlign = "right";
+        for (let i = 0; i <= 5; i++) {
+          const v = (maxY * i) / 5;
+          bCtx.fillText(v.toFixed(0) + "k", pad.l - 8, pad.t + ch * (1 - i / 5) + 4);
+        }
+
+        // Title
+        bCtx.fillStyle = "#ccc";
+        bCtx.font = "12px Inter, system-ui";
+        bCtx.textAlign = "left";
+        bCtx.fillText("BEV Fleet: Model vs Cumulative Registrations (2015–2024)", pad.l, pad.t - 6);
+      }
+      drawBevValid();
+    </script>
+  </body>
+</html>
