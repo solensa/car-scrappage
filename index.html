@@ -1553,7 +1553,7 @@
 
         ctx.beginPath();
         for (let a = 0; a <= 30; a++) {
-          const v = 1 - S(a + 1, eta, k) / Math.max(S(a, eta, k), 1e-12);
+          const v = 1 - S(a, eta, k);
           const x = xP(a),
             y = yP(v);
           a === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
